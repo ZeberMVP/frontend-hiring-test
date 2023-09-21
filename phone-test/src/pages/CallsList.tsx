@@ -28,6 +28,8 @@ export const CallsListPage = () => {
   const [search] = useSearchParams();
   const navigate = useNavigate();
   const [callsPerPage, setCallsPerPage] = useState(25);
+  const [filterCallType, setFilterCallType] = useState('');
+  const [filterDirection, setFilterDirection] = useState('');
   const pageQueryParams = search.get('page');
   const activePage = !!pageQueryParams ? parseInt(pageQueryParams) : 1;
   const { loading, error, data } = useQuery(PAGINATED_CALLS, {
@@ -57,57 +59,83 @@ export const CallsListPage = () => {
       <Typography variant="displayM" textAlign="center" py={3}>
         Calls History
       </Typography>
+      <label htmlFor="filter-call-type">Filter by Call Type </label>
+      <select
+        id="filter-call-type"
+        name="filter-call-type"
+        value={filterCallType}
+        onChange={e => setFilterCallType(e.target.value)}
+      >
+        <option value="">All</option>
+        <option value="answered">Answered</option>
+        <option value="missed">Missed</option>
+        <option value="voicemail">Voicemail</option>
+      </select>
+      <label htmlFor="filter-call-type">Filter by Direction </label>
+      <select
+        id="filter-direction"
+        name="filter-direction"
+        value={filterDirection}
+        onChange={e => setFilterDirection(e.target.value)}
+      >
+        <option value="">All</option>
+        <option value="inbound">Inbound</option>
+        <option value="outbound">Outbound</option>
+      </select>
       <Spacer space={3} direction="vertical">
-        {calls.map((call: Call) => {
-          const icon = call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
-          const title =
-            call.call_type === 'missed'
-              ? 'Missed call'
-              : call.call_type === 'answered'
-              ? 'Call answered'
-              : 'Voicemail';
-          const subtitle = call.direction === 'inbound' ? `from ${call.from}` : `to ${call.to}`;
-          const duration = formatDuration(call.duration / 1000);
-          const date = formatDate(call.created_at);
-          const notes = call.notes ? `Call has ${call.notes.length} notes` : <></>;
+        {calls
+          .filter((call: Call) => call.call_type === filterCallType || filterCallType === '')
+          .filter((call: Call) => call.direction === filterDirection || filterDirection === '')
+          .map((call: Call) => {
+            const icon = call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
+            const title =
+              call.call_type === 'missed'
+                ? 'Missed call'
+                : call.call_type === 'answered'
+                ? 'Call answered'
+                : 'Voicemail';
+            const subtitle = call.direction === 'inbound' ? `from ${call.from}` : `to ${call.to}`;
+            const duration = formatDuration(call.duration / 1000);
+            const date = formatDate(call.created_at);
+            const notes = call.notes ? `Call has ${call.notes.length} notes` : <></>;
 
-          return (
-            <Box
-              key={call.id}
-              bg="black-a30"
-              borderRadius={16}
-              cursor="pointer"
-              onClick={() => handleCallOnClick(call.id)}
-            >
-              <Grid
-                gridTemplateColumns="32px 1fr max-content"
-                columnGap={2}
-                borderBottom="1px solid"
-                borderBottomColor="neutral-700"
-                alignItems="center"
-                px={4}
-                py={2}
+            return (
+              <Box
+                key={call.id}
+                bg="black-a30"
+                borderRadius={16}
+                cursor="pointer"
+                onClick={() => handleCallOnClick(call.id)}
               >
-                <Box>
-                  <Icon component={icon} size={32} />
+                <Grid
+                  gridTemplateColumns="32px 1fr max-content"
+                  columnGap={2}
+                  borderBottom="1px solid"
+                  borderBottomColor="neutral-700"
+                  alignItems="center"
+                  px={4}
+                  py={2}
+                >
+                  <Box>
+                    <Icon component={icon} size={32} />
+                  </Box>
+                  <Box>
+                    <Typography variant="body">{title}</Typography>
+                    <Typography variant="body2">{subtitle}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" textAlign="right">
+                      {duration}
+                    </Typography>
+                    <Typography variant="caption">{date}</Typography>
+                  </Box>
+                </Grid>
+                <Box px={4} py={2}>
+                  <Typography variant="caption">{notes}</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="body">{title}</Typography>
-                  <Typography variant="body2">{subtitle}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" textAlign="right">
-                    {duration}
-                  </Typography>
-                  <Typography variant="caption">{date}</Typography>
-                </Box>
-              </Grid>
-              <Box px={4} py={2}>
-                <Typography variant="caption">{notes}</Typography>
               </Box>
-            </Box>
-          );
-        })}
+            );
+          })}
       </Spacer>
 
       {totalCount && (
