@@ -13,6 +13,7 @@ import {
 } from '@aircall/tractor';
 import { formatDate, formatDuration } from '../helpers/dates';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 
 export const PaginationWrapper = styled.div`
   > div {
@@ -23,17 +24,16 @@ export const PaginationWrapper = styled.div`
   }
 `;
 
-const CALLS_PER_PAGE = 5;
-
 export const CallsListPage = () => {
   const [search] = useSearchParams();
   const navigate = useNavigate();
+  const [callsPerPage, setCallsPerPage] = useState(25);
   const pageQueryParams = search.get('page');
   const activePage = !!pageQueryParams ? parseInt(pageQueryParams) : 1;
   const { loading, error, data } = useQuery(PAGINATED_CALLS, {
     variables: {
-      offset: (activePage - 1) * CALLS_PER_PAGE,
-      limit: CALLS_PER_PAGE
+      offset: (activePage - 1) * callsPerPage,
+      limit: callsPerPage
     }
     // onCompleted: () => handleRefreshToken(),
   });
@@ -114,9 +114,10 @@ export const CallsListPage = () => {
         <PaginationWrapper>
           <Pagination
             activePage={activePage}
-            pageSize={CALLS_PER_PAGE}
+            pageSize={callsPerPage}
             onPageChange={handlePageChange}
             recordsTotalCount={totalCount}
+            onPageSizeChange={(pageSize: number) => setCallsPerPage(pageSize)}
           />
         </PaginationWrapper>
       )}
