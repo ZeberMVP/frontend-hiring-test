@@ -24,6 +24,10 @@ export const PaginationWrapper = styled.div`
   }
 `;
 
+type DateGroup = {
+  [date: string]: Call[];
+};
+
 export const CallsListPage = () => {
   const [search] = useSearchParams();
   const navigate = useNavigate();
@@ -52,6 +56,21 @@ export const CallsListPage = () => {
 
   const handlePageChange = (page: number) => {
     navigate(`/calls/?page=${page}`);
+  };
+
+  const filteredCalls = calls
+    .filter((call: Call) => call.call_type === filterCallType || filterCallType === '')
+    .filter((call: Call) => call.direction === filterDirection || filterDirection === '');
+
+  const groupByDate = (calls: Call[]): DateGroup => {
+    return calls.reduce((acc: any, call: Call) => {
+      const date = formatDate(call.created_at).substring(0, 6);
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(call);
+      return acc;
+    }, {});
   };
 
   return (
@@ -83,59 +102,65 @@ export const CallsListPage = () => {
         <option value="outbound">Outbound</option>
       </select>
       <Spacer space={3} direction="vertical">
-        {calls
-          .filter((call: Call) => call.call_type === filterCallType || filterCallType === '')
-          .filter((call: Call) => call.direction === filterDirection || filterDirection === '')
-          .map((call: Call) => {
-            const icon = call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
-            const title =
-              call.call_type === 'missed'
-                ? 'Missed call'
-                : call.call_type === 'answered'
-                ? 'Call answered'
-                : 'Voicemail';
-            const subtitle = call.direction === 'inbound' ? `from ${call.from}` : `to ${call.to}`;
-            const duration = formatDuration(call.duration / 1000);
-            const date = formatDate(call.created_at);
-            const notes = call.notes ? `Call has ${call.notes.length} notes` : <></>;
+        {Object.entries(groupByDate(filteredCalls)).map(([date, calls]) => {
+          return (
+            <Box key={date}>
+              <Typography variant="displayS">{date}</Typography>
+              {calls.map((call: Call) => {
+                const icon =
+                  call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
+                const title =
+                  call.call_type === 'missed'
+                    ? 'Missed call'
+                    : call.call_type === 'answered'
+                    ? 'Call answered'
+                    : 'Voicemail';
+                const subtitle =
+                  call.direction === 'inbound' ? `from ${call.from}` : `to ${call.to}`;
+                const duration = formatDuration(call.duration / 1000);
+                const date = formatDate(call.created_at);
+                const notes = call.notes ? `Call has ${call.notes.length} notes` : <></>;
 
-            return (
-              <Box
-                key={call.id}
-                bg="black-a30"
-                borderRadius={16}
-                cursor="pointer"
-                onClick={() => handleCallOnClick(call.id)}
-              >
-                <Grid
-                  gridTemplateColumns="32px 1fr max-content"
-                  columnGap={2}
-                  borderBottom="1px solid"
-                  borderBottomColor="neutral-700"
-                  alignItems="center"
-                  px={4}
-                  py={2}
-                >
-                  <Box>
-                    <Icon component={icon} size={32} />
+                return (
+                  <Box
+                    key={call.id}
+                    bg="black-a30"
+                    borderRadius={16}
+                    cursor="pointer"
+                    onClick={() => handleCallOnClick(call.id)}
+                  >
+                    <Grid
+                      gridTemplateColumns="32px 1fr max-content"
+                      columnGap={2}
+                      borderBottom="1px solid"
+                      borderBottomColor="neutral-700"
+                      alignItems="center"
+                      px={4}
+                      py={2}
+                    >
+                      <Box>
+                        <Icon component={icon} size={32} />
+                      </Box>
+                      <Box>
+                        <Typography variant="body">{title}</Typography>
+                        <Typography variant="body2">{subtitle}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" textAlign="right">
+                          {duration}
+                        </Typography>
+                        <Typography variant="caption">{date}</Typography>
+                      </Box>
+                    </Grid>
+                    <Box px={4} py={2}>
+                      <Typography variant="caption">{notes}</Typography>
+                    </Box>
                   </Box>
-                  <Box>
-                    <Typography variant="body">{title}</Typography>
-                    <Typography variant="body2">{subtitle}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" textAlign="right">
-                      {duration}
-                    </Typography>
-                    <Typography variant="caption">{date}</Typography>
-                  </Box>
-                </Grid>
-                <Box px={4} py={2}>
-                  <Typography variant="caption">{notes}</Typography>
-                </Box>
-              </Box>
-            );
-          })}
+                );
+              })}
+            </Box>
+          );
+        })}
       </Spacer>
 
       {totalCount && (
